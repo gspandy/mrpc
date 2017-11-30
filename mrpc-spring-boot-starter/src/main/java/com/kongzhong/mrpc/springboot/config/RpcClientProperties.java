@@ -1,6 +1,5 @@
 package com.kongzhong.mrpc.springboot.config;
 
-import jdk.nashorn.internal.runtime.linker.Bootstrap;
 import lombok.Data;
 import lombok.ToString;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -15,9 +14,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
 @ToString
 public class RpcClientProperties {
-
-    // 服务端传输协议，默认tcp
-    private String transport;
 
     // 服务所属appId
     private String appId;

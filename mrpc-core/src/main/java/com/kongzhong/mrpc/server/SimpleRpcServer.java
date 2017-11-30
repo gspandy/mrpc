@@ -13,7 +13,6 @@ import com.kongzhong.mrpc.embedded.ConfigServiceImpl;
 import com.kongzhong.mrpc.enums.EventType;
 import com.kongzhong.mrpc.enums.NodeAliveStateEnum;
 import com.kongzhong.mrpc.enums.RegistryEnum;
-import com.kongzhong.mrpc.enums.TransportEnum;
 import com.kongzhong.mrpc.event.Event;
 import com.kongzhong.mrpc.event.EventManager;
 import com.kongzhong.mrpc.exception.InitializeException;
@@ -24,7 +23,7 @@ import com.kongzhong.mrpc.registry.DefaultRegistry;
 import com.kongzhong.mrpc.registry.ServiceRegistry;
 import com.kongzhong.mrpc.serialize.RpcSerialize;
 import com.kongzhong.mrpc.serialize.jackson.JacksonSerialize;
-import com.kongzhong.mrpc.transport.TransferSelector;
+import com.kongzhong.mrpc.transport.http.HttpServerChannelInitializer;
 import com.kongzhong.mrpc.transport.netty.SimpleServerHandler;
 import com.kongzhong.mrpc.utils.*;
 import io.netty.bootstrap.ServerBootstrap;
@@ -117,13 +116,6 @@ public abstract class SimpleRpcServer {
     protected String serialize;
 
     /**
-     * 传输协议，默认tcp协议
-     */
-    @Getter
-    @Setter
-    protected String transport;
-
-    /**
      * appId
      */
     @Getter
@@ -144,11 +136,6 @@ public abstract class SimpleRpcServer {
     @Getter
     @Setter
     protected String test;
-
-    /**
-     * 传输协议选择器
-     */
-    private TransferSelector transferSelector;
 
     /**
      * netty服务端配置
@@ -191,9 +178,6 @@ public abstract class SimpleRpcServer {
             nettyConfig = new NettyConfig(128, true);
         }
 
-        if (null == transport) {
-            transport = "tcp";
-        }
         if (null == serialize) {
             serialize = "kyro";
         }
@@ -214,7 +198,6 @@ public abstract class SimpleRpcServer {
             throw new InitializeException("RPC server serialize is null.");
         }
 
-        transferSelector = new TransferSelector(rpcSerialize);
         int businessThreadPoolSize = nettyConfig.getBusinessThreadPoolSize();
         setListeningExecutorService(businessThreadPoolSize);
     }
@@ -237,7 +220,7 @@ public abstract class SimpleRpcServer {
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(boss, worker).channel(NioServerSocketChannel.class)
-                    .childHandler(transferSelector.getServerChannelHandler(transport))
+                    .childHandler(new HttpServerChannelInitializer())
                     .option(ChannelOption.SO_BACKLOG, nettyConfig.getBacklog())
                     .childOption(ChannelOption.SO_KEEPALIVE, nettyConfig.isKeepalive())
                     .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(nettyConfig.getLowWaterMark(), nettyConfig.getHighWaterMark()));
@@ -372,7 +355,6 @@ public abstract class SimpleRpcServer {
                 .address(this.address)
                 .appId(this.appId)
                 .aliveState(aliveState)
-                .transport(TransportEnum.valueOf(this.transport.toUpperCase()))
                 .services(ServiceStatusTable.me().getServiceStatus())
                 .build();
 

@@ -6,18 +6,16 @@ import com.google.common.reflect.Reflection;
 import com.kongzhong.mrpc.client.proxy.SimpleClientProxy;
 import com.kongzhong.mrpc.config.ClientConfig;
 import com.kongzhong.mrpc.config.NettyConfig;
-import com.kongzhong.mrpc.enums.*;
-import com.kongzhong.mrpc.event.Event;
-import com.kongzhong.mrpc.event.EventManager;
+import com.kongzhong.mrpc.enums.HaStrategyEnum;
+import com.kongzhong.mrpc.enums.LbStrategyEnum;
+import com.kongzhong.mrpc.enums.RegistryEnum;
 import com.kongzhong.mrpc.exception.RpcException;
 import com.kongzhong.mrpc.exception.SystemException;
 import com.kongzhong.mrpc.interceptor.RpcClientInterceptor;
 import com.kongzhong.mrpc.model.ClientBean;
 import com.kongzhong.mrpc.model.RegistryBean;
-import com.kongzhong.mrpc.model.RpcContext;
 import com.kongzhong.mrpc.registry.DefaultDiscovery;
 import com.kongzhong.mrpc.registry.ServiceDiscovery;
-import com.kongzhong.mrpc.registry.ServiceRegistry;
 import com.kongzhong.mrpc.serialize.RpcSerialize;
 import com.kongzhong.mrpc.transport.netty.SimpleClientHandler;
 import com.kongzhong.mrpc.utils.ReflectUtils;
@@ -52,12 +50,6 @@ public abstract class SimpleRpcClient {
      */
     @Setter
     protected String serialize;
-
-    /**
-     * 传输协议，默认tcp协议
-     */
-    @Setter
-    protected String transport;
 
     /**
      * 客户端是否已经初始化
@@ -180,9 +172,6 @@ public abstract class SimpleRpcClient {
         if (null == serialize) {
             serialize = "kyro";
         }
-        if (null == transport) {
-            transport = "tcp";
-        }
         if (null == lbStrategy) {
             lbStrategy = LbStrategyEnum.ROUND.name();
         }
@@ -199,7 +188,6 @@ public abstract class SimpleRpcClient {
         }
 
         LbStrategyEnum lbStrategyEnum = LbStrategyEnum.valueOf(this.lbStrategy.toUpperCase());
-        TransportEnum  transportEnum  = TransportEnum.valueOf(this.transport.toUpperCase());
         HaStrategyEnum haStrategyEnum = HaStrategyEnum.valueOf(this.haStrategy.toUpperCase());
 
         ClientConfig.me().setAppId(appId);
@@ -211,7 +199,6 @@ public abstract class SimpleRpcClient {
         ClientConfig.me().setRetryCount(retryCount);
         ClientConfig.me().setWaitTimeout(waitTimeout);
         ClientConfig.me().setPingInterval(pingInterval);
-        ClientConfig.me().setTransport(transportEnum);
 
         log.info("{}", ClientConfig.me());
 
