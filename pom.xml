@@ -7,7 +7,7 @@
     <groupId>com.kongzhong.mrpc</groupId>
     <artifactId>mrpc</artifactId>
     <packaging>pom</packaging>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.2-SNAPSHOT</version>
 
     <modules>
         <module>mrpc-common</module>
@@ -21,7 +21,6 @@
         <module>mrpc-interceptor-validator</module>
         <module>mrpc-hystrix</module>
         <module>mrpc-trace</module>
-        <module>mrpc-ktrace</module>
     </modules>
 
     <properties>
@@ -41,6 +40,7 @@
         <zookeeper.version>3.4.8</zookeeper.version>
         <jackson.version>2.7.0</jackson.version>
         <consul-api.version>1.2.3</consul-api.version>
+        <!--<klog.version>0.2.6-SNAPSHOT</klog.version>-->
     </properties>
 
     <dependencies>
@@ -152,7 +152,7 @@
             </plugin>
         </plugins>
     </build>
-
+    
     <repositories>
         <repository>
             <id>releases</id>
