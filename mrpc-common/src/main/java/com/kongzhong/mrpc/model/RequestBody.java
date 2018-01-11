@@ -23,6 +23,7 @@ public class RequestBody {
     private String service;
     private String method;
     private String version;
+    @Builder.Default
     private Map<String, String> context = new HashMap<>();
     private List<Object> parameters;
     private List<String> parameterTypes;

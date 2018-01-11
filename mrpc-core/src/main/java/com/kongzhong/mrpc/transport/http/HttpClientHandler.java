@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Objects;
 
 import static com.kongzhong.mrpc.Const.*;
 import static io.netty.handler.codec.http.HttpHeaderValues.KEEP_ALIVE;
@@ -112,7 +113,7 @@ public class HttpClientHandler extends SimpleClientHandler<FullHttpResponse> {
             Object result = rpcResponse.getResult();
             if (null != result && null != rpcResponse.getReturnType()
                     && !rpcResponse.getReturnType().equals(Void.class)) {
-                Method method = ReflectUtils.method(ReflectUtils.from(serviceClass), methodName);
+                Method method = ReflectUtils.method(Objects.requireNonNull(ReflectUtils.from(serviceClass)), methodName);
                 Object object = null;
                 if (method != null) {
                     object = JacksonSerialize.parseObject(JacksonSerialize.toJSONString(result), method.getGenericReturnType());
