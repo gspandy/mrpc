@@ -1,6 +1,6 @@
 package com.kongzhong.mrpc.trace.interceptor;
 
-import com.kongzhong.mrpc.trace.config.TraceClientAutoConfigure;
+import com.kongzhong.mrpc.trace.config.TraceAutoConfigure;
 import com.kongzhong.mrpc.trace.utils.Exclusions;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -21,9 +21,10 @@ public class TraceMvcInterceptor extends HandlerInterceptorAdapter {
 
     private BaseFilter baseFilter;
 
-    public TraceMvcInterceptor(TraceClientAutoConfigure clientAutoConfigure) {
+    public TraceMvcInterceptor(TraceAutoConfigure clientAutoConfigure) {
         baseFilter = new BaseFilter(clientAutoConfigure);
         baseFilter.setExcludesPattern(Exclusions.defaultExclusions().getExclusions());
+        log.info("TraceMvcInterceptor 初始化完毕 config={}", clientAutoConfigure);
     }
 
     @Override
@@ -40,8 +41,6 @@ public class TraceMvcInterceptor extends HandlerInterceptorAdapter {
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         super.afterCompletion(request, response, handler, ex);
         // end root span
-        baseFilter.endTrace(request);
+        baseFilter.endTrace(request, ex);
     }
-
-
 }

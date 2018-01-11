@@ -155,6 +155,10 @@ public abstract class SimpleRpcClient {
         return Reflection.newProxy(rpcInterface, new SimpleClientProxy(rpcClientInterceptors));
     }
 
+    <T> T getProxyBean(Integer waitTimeout, Class<T> rpcInterface) {
+        return Reflection.newProxy(rpcInterface, new SimpleClientProxy(waitTimeout, rpcClientInterceptors));
+    }
+
     /**
      * 获取服务使用的注册中心
      *
@@ -252,7 +256,7 @@ public abstract class SimpleRpcClient {
         String   serviceName  = clientBean.getServiceName();
         Class<?> serviceClass = clientBean.getServiceClass();
         try {
-            Object object = this.getProxyBean(serviceClass);
+            Object object = this.getProxyBean(clientBean.getWaitTimeout(), serviceClass);
             if (null != beanFactory) {
                 beanFactory.registerSingleton(serviceName, object);
             }

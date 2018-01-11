@@ -2,9 +2,10 @@ package com.kongzhong.mrpc.trace.interceptor;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
+import com.kongzhong.basic.zipkin.TraceConstants;
 import com.kongzhong.basic.zipkin.TraceContext;
 import com.kongzhong.basic.zipkin.agent.AbstractAgent;
-import com.kongzhong.basic.zipkin.agent.KafkaAgent;
+import com.kongzhong.basic.zipkin.agent.InitializeAgent;
 import com.kongzhong.basic.zipkin.util.AppConfiguration;
 import com.kongzhong.mrpc.Const;
 import com.kongzhong.mrpc.client.invoke.ClientInvocation;
@@ -13,8 +14,7 @@ import com.kongzhong.mrpc.interceptor.RpcClientInterceptor;
 import com.kongzhong.mrpc.model.RpcContext;
 import com.kongzhong.mrpc.model.RpcRequest;
 import com.kongzhong.mrpc.serialize.jackson.JacksonSerialize;
-import com.kongzhong.mrpc.trace.TraceConstants;
-import com.kongzhong.mrpc.trace.config.TraceClientAutoConfigure;
+import com.kongzhong.mrpc.trace.config.TraceAutoConfigure;
 import com.kongzhong.mrpc.trace.utils.RequestUtils;
 import com.kongzhong.mrpc.utils.Ids;
 import com.kongzhong.mrpc.utils.NetUtils;
@@ -39,25 +39,30 @@ public class TraceClientInterceptor implements RpcClientInterceptor {
 
     private AbstractAgent agent;
 
-    private TraceClientAutoConfigure traceClientAutoConfigure;
+    private TraceAutoConfigure traceAutoConfigure;
 
-    public TraceClientInterceptor(TraceClientAutoConfigure traceClientAutoConfigure) {
-        if (null == traceClientAutoConfigure) {
-            this.traceClientAutoConfigure = new TraceClientAutoConfigure();
+    private boolean agentInited;
+
+    public TraceClientInterceptor(TraceAutoConfigure traceAutoConfigure) {
+        if (null == traceAutoConfigure) {
+            this.traceAutoConfigure = new TraceAutoConfigure();
         } else {
-            this.traceClientAutoConfigure = traceClientAutoConfigure;
-            try {
-                this.agent = new KafkaAgent(traceClientAutoConfigure.getUrl(), traceClientAutoConfigure.getTopic());
-            } catch (Exception e) {
-                log.error("初始化Trace客户端失败", e);
+            this.traceAutoConfigure = traceAutoConfigure;
+            AbstractAgent agent = InitializeAgent.getAgent();
+            if (null == agent) {
+                this.agent = InitializeAgent.initAndGetAgent(traceAutoConfigure.getUrl(), traceAutoConfigure.getTopic());
+            } else {
+                this.agent = agent;
             }
         }
+        this.agentInited = this.agent != null;
+        log.info("TraceClientInterceptor 初始化完毕 agentInited={} config={}", this.agentInited, this.traceAutoConfigure);
     }
 
     @Override
     public Object execute(ClientInvocation invocation) throws Throwable {
 
-        if (!traceClientAutoConfigure.getEnable()) {
+        if (!traceAutoConfigure.getEnable()) {
             // not need tracing
             return invocation.next();
         }
@@ -85,7 +90,7 @@ public class TraceClientInterceptor implements RpcClientInterceptor {
 
             this.endTrace(request, consumeSpan, watch, null);
             return result;
-        } catch (Exception e) {
+        } catch (Exception | Error e) {
             this.endTrace(request, consumeSpan, watch, e);
             throw e;
         }
@@ -142,7 +147,7 @@ public class TraceClientInterceptor implements RpcClientInterceptor {
         return null;
     }
 
-    private void endTrace(RpcRequest request, Span clientSpan, Stopwatch watch, Exception e) {
+    private void endTrace(RpcRequest request, Span clientSpan, Stopwatch watch, Throwable e) {
         try {
             if (clientSpan == null) {
                 return;
@@ -158,11 +163,17 @@ public class TraceClientInterceptor implements RpcClientInterceptor {
                             Endpoint.create(AppConfiguration.getAppId(), NetUtils.ip2Num(host), port)));
 
             if (null != e) {
+                String error = RequestUtils.getServerName(request.getClassName(), request.getMethodName()) + "\n" +
+                        Throwables.getStackTraceAsString(e);
+
                 // attach exception
                 clientSpan.addToBinary_annotations(BinaryAnnotation.create(
-                        "Exception", Throwables.getStackTraceAsString(e), null));
+                        "Exception", error, null));
             }
 
+            if (!this.agentInited) {
+                return;
+            }
             List<Span> spans = TraceContext.getSpans();
             agent.send(spans);
             if (log.isDebugEnabled()) {
